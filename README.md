@@ -25,24 +25,6 @@ The legal data in `backend/bns_data.py` was manually verified against multiple i
 legal sources (July 2026) — the LLM never invents section numbers; it only reasons over the
 verified ingredients you give it. **Re-verify before your demo** if you add more offences.
 
-## Project structure
-
-```
-nyayalekh/
-  backend/
-    main.py           FastAPI app — API endpoints + serves the frontend
-    bns_data.py        Verified BNS/BNSS legal data (the factual backbone)
-    llm.py             Claude API calls: fact extraction + section reasoning
-    pdf_gen.py          Complaint PDF generation (reportlab)
-    requirements.txt
-    .env.example
-  frontend/
-    index.html          4-step single-page app (no build tooling needed)
-    style.css
-    app.js               API calls + browser speech-to-text (Web Speech API)
-  README.md
-```
-
 
 ## A note on rate limits (since Groq's free tier isn't unlimited)
 
