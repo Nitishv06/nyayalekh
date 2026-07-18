@@ -1,6 +1,6 @@
 """
 main.py
-NyayaLekh backend. Single FastAPI service that:
+NyayaLekh backend. Single ASGI service that:
   1. Serves the static frontend (so you deploy ONE service, not two).
   2. Exposes the AI pipeline as three endpoints:
        POST /api/extract-facts   -> structured facts from narrative
@@ -12,17 +12,19 @@ NyayaLekh backend. Single FastAPI service that:
 
 import os
 from pathlib import Path
-from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import Response, FileResponse
-from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
+
+from starlette.applications import Starlette
+from starlette.middleware.cors import CORSMiddleware
+from starlette.requests import Request
+from starlette.responses import JSONResponse, Response
+from starlette.routing import Mount, Route
+from starlette.staticfiles import StaticFiles
 
 from bns_data import OFFENCES
 from llm import extract_facts, match_sections
 from pdf_gen import generate_complaint_pdf
 
-app = FastAPI(title="NyayaLekh API")
+app = Starlette()
 
 app.add_middleware(
     CORSMiddleware,
@@ -34,65 +36,84 @@ app.add_middleware(
 FRONTEND_DIR = Path(__file__).resolve().parent.parent / "frontend"
 
 
-class NarrativeIn(BaseModel):
-    narrative: str
-
-
-class AnalyzeIn(BaseModel):
-    facts: dict
-
-
-class PdfIn(BaseModel):
-    facts: dict
-    analysis: dict
-    language_label: str = "English"
-
-
-@app.get("/api/health")
-def health():
+async def health(request: Request):
     key_present = bool(os.environ.get("GROQ_API_KEY"))
-    return {"status": "ok", "groq_key_configured": key_present}
+    return JSONResponse({"status": "ok", "groq_key_configured": key_present})
 
 
-@app.get("/api/offences")
-def offences():
-    # Return a UI-safe subset (omit internal ingredient lists if you want a
-    # lighter payload; kept here since the frontend shows them for transparency)
-    return {"offences": OFFENCES}
+async def offences(request: Request):
+    return JSONResponse({"offences": OFFENCES})
 
 
-@app.post("/api/extract-facts")
-def api_extract_facts(body: NarrativeIn):
-    if not body.narrative or not body.narrative.strip():
-        raise HTTPException(status_code=400, detail="Narrative is empty.")
+async def api_extract_facts(request: Request):
     try:
-        return extract_facts(body.narrative)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Fact extraction failed: {e}")
+        payload = await request.json()
+    except Exception:
+        return JSONResponse({"detail": "Invalid JSON body."}, status_code=400)
 
+    narrative = payload.get("narrative") if isinstance(payload, dict) else None
+    if not isinstance(narrative, str) or not narrative.strip():
+        return JSONResponse({"detail": "Narrative is empty."}, status_code=400)
 
-@app.post("/api/analyze")
-def api_analyze(body: AnalyzeIn):
-    if not body.facts:
-        raise HTTPException(status_code=400, detail="Facts are required.")
     try:
-        return match_sections(body.facts)
+        return JSONResponse(extract_facts(narrative))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Section analysis failed: {e}")
+        return JSONResponse({"detail": f"Fact extraction failed: {e}"}, status_code=500)
 
 
-@app.post("/api/generate-pdf")
-def api_generate_pdf(body: PdfIn):
+async def api_analyze(request: Request):
     try:
-        pdf_bytes = generate_complaint_pdf(body.facts, body.analysis, body.language_label)
+        payload = await request.json()
+    except Exception:
+        return JSONResponse({"detail": "Invalid JSON body."}, status_code=400)
+
+    facts = payload.get("facts") if isinstance(payload, dict) else None
+    if not isinstance(facts, dict) or not facts:
+        return JSONResponse({"detail": "Facts are required."}, status_code=400)
+
+    try:
+        return JSONResponse(match_sections(facts))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"PDF generation failed: {e}")
+        return JSONResponse({"detail": f"Section analysis failed: {e}"}, status_code=500)
+
+
+async def api_generate_pdf(request: Request):
+    try:
+        payload = await request.json()
+    except Exception:
+        return JSONResponse({"detail": "Invalid JSON body."}, status_code=400)
+
+    if not isinstance(payload, dict):
+        return JSONResponse({"detail": "Invalid request body."}, status_code=400)
+
+    facts = payload.get("facts")
+    analysis = payload.get("analysis")
+    language_label = payload.get("language_label", "English")
+
+    if not isinstance(facts, dict) or not isinstance(analysis, dict):
+        return JSONResponse({"detail": "Facts and analysis are required."}, status_code=400)
+
+    try:
+        pdf_bytes = generate_complaint_pdf(facts, analysis, language_label)
+    except Exception as e:
+        return JSONResponse({"detail": f"PDF generation failed: {e}"}, status_code=500)
+
     return Response(
         content=pdf_bytes,
         media_type="application/pdf",
         headers={"Content-Disposition": "attachment; filename=complaint_draft.pdf"},
     )
 
+
+routes = [
+    Route("/api/health", health, methods=["GET"]),
+    Route("/api/offences", offences, methods=["GET"]),
+    Route("/api/extract-facts", api_extract_facts, methods=["POST"]),
+    Route("/api/analyze", api_analyze, methods=["POST"]),
+    Route("/api/generate-pdf", api_generate_pdf, methods=["POST"]),
+]
+
+app.router.routes.extend(routes)
 
 # --- Static frontend (served last so /api routes above take priority) ---
 if FRONTEND_DIR.exists():
