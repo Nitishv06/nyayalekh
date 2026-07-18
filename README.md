@@ -43,47 +43,6 @@ nyayalekh/
   README.md
 ```
 
-## Run locally (VS Code)
-
-1. Open the `nyayalekh` folder in VS Code.
-2. Create a virtual environment and install dependencies:
-   ```bash
-   cd backend
-   python3 -m venv venv
-   source venv/bin/activate        # Windows: venv\Scripts\activate
-   pip install -r requirements.txt
-   ```
-3. Get a free API key at https://console.groq.com (no credit card required — sign in with
-   Google/GitHub/email, copy the key from API Keys). Copy `.env.example` to `.env` and add
-   it, or export it directly:
-   ```bash
-   export GROQ_API_KEY=gsk_...
-   ```
-4. Run the server:
-   ```bash
-   uvicorn main:app --reload --port 8000
-   ```
-5. Open **http://localhost:8000** — the backend also serves the frontend, so this is your
-   whole app, one URL, no CORS headaches.
-
-## Deploy (for submission)
-
-Any platform that runs a Python web service works. Simplest options:
-
-**Render.com**
-- New Web Service → connect your GitHub repo → root directory `backend`
-- Build command: `pip install -r requirements.txt`
-- Start command: `uvicorn main:app --host 0.0.0.0 --port $PORT`
-- Add environment variable `GROQ_API_KEY` in the dashboard
-
-**Railway.app** — same idea, Railway auto-detects the `Procfile`-less Python app; set the
-start command as above and add the env var.
-
-**Hugging Face Spaces (Docker)** — if you prefer, wrap this in a simple Dockerfile with the
-same start command; Spaces gives you a free public URL quickly.
-
-Whichever you choose: **set `GROQ_API_KEY` as an environment variable on the platform, never
-commit it to GitHub.**
 
 ## A note on rate limits (since Groq's free tier isn't unlimited)
 
@@ -93,18 +52,6 @@ requests (extract + analyze), so that's ~500 complaints/day of headroom — plen
 testing, and a live demo. If you ever hit a 429 during testing, just wait ~60 seconds; Groq's
 limits reset on a rolling window. Exact numbers can change, so check
 https://console.groq.com/docs/rate-limits if something feels off.
-
-## Before you submit — checklist
-
-- [ ] Re-verify the 4 BNS sections in `bns_data.py` against a current source (things can be
-      amended; I verified as of July 2026).
-- [ ] Test all 4 offence scenarios end-to-end (fraud, theft, intimidation, hurt).
-- [ ] Confirm the deployed link works from a phone / different device, no login required.
-- [ ] `.env` / API key is NOT committed to your public GitHub repo — add `.env` to
-      `.gitignore`.
-- [ ] Record your 2–3 min demo: messy narrative → extracted facts → section reasoning with
-      ingredients shown → generated PDF → the "police must register FIR" payoff line.
-- [ ] Write your 1–2 page problem statement (I can draft this next if you want).
 
 ## Disclaimer
 
