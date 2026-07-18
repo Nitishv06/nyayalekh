@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>NyayaLekh — AI Complaint Drafter</title>
+<link rel="stylesheet" href="style.css" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-mark">न्या</span>
+    <span class="brand-name">NyayaLekh</span>
+  </div>
+  <span class="brand-tagline">Speak what happened. Get a station-ready complaint.</span>
+</header>
+
+<main class="wrap">
+
+  <!-- STEP INDICATOR -->
+  <nav class="steps" id="steps">
+    <div class="step active" data-step="1"><span class="step-num">01</span><span>Narrate</span></div>
+    <div class="step" data-step="2"><span class="step-num">02</span><span>Confirm facts</span></div>
+    <div class="step" data-step="3"><span class="step-num">03</span><span>Legal analysis</span></div>
+    <div class="step" data-step="4"><span class="step-num">04</span><span>Complaint</span></div>
+  </nav>
+
+  <!-- STEP 1: NARRATE -->
+  <section class="panel" id="panel-1">
+    <h1>Tell us what happened</h1>
+    <p class="lede">Speak or type it exactly as you'd explain it to a friend — messy, out of order, upset. The AI will structure it. Nothing here is filed until you approve the final document.</p>
+
+    <div class="narrate-box">
+      <textarea id="narrative-input" placeholder="e.g. Yesterday around 6pm someone messaged me on WhatsApp saying I won a lottery and asked me to pay ₹5000 as processing fee to a UPI ID. I paid and then they blocked me..."></textarea>
+      <div class="narrate-controls">
+        <button id="mic-btn" class="btn-ghost" title="Voice input (browser speech-to-text)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v4M8 23h8"/></svg>
+          <span id="mic-label">Speak instead</span>
+        </button>
+        <span class="lang-hint">Works in English, Hindi &amp; Telugu (if your browser supports it)</span>
+      </div>
+    </div>
+
+    <button id="btn-extract" class="btn-primary">Analyze my narrative →</button>
+    <div id="extract-status" class="status-line"></div>
+  </section>
+
+  <!-- STEP 2: CONFIRM FACTS -->
+  <section class="panel hidden" id="panel-2">
+    <h1>Confirm the facts</h1>
+    <p class="lede">This is what NyayaLekh understood. Edit anything that's wrong before we check the law.</p>
+
+    <div id="clarify-box" class="clarify-box hidden">
+      <strong>A couple of quick questions:</strong>
+      <ul id="clarify-list"></ul>
+    </div>
+
+    <div class="fact-grid">
+      <label>Your name
+        <input type="text" id="f-name" />
+      </label>
+      <label>Date &amp; time of incident
+        <input type="text" id="f-datetime" />
+      </label>
+      <label>Location
+        <input type="text" id="f-location" />
+      </label>
+      <label>Accused (description, if known)
+        <input type="text" id="f-accused" />
+      </label>
+    </div>
+
+    <label class="full">Summary
+      <textarea id="f-summary" rows="3"></textarea>
+    </label>
+    <label class="full">What happened, step by step (one per line)
+      <textarea id="f-acts" rows="4"></textarea>
+    </label>
+    <label class="full">Loss or harm suffered
+      <textarea id="f-loss" rows="2"></textarea>
+    </label>
+    <label class="full">Evidence you have (one per line)
+      <textarea id="f-evidence" rows="2"></textarea>
+    </label>
+    <label class="full">Witnesses (one per line, if any)
+      <textarea id="f-witnesses" rows="2"></textarea>
+    </label>
+
+    <div class="row-actions">
+      <button class="btn-ghost" id="btn-back-1">← Back</button>
+      <button class="btn-primary" id="btn-analyze">Check applicable law →</button>
+    </div>
+    <div id="analyze-status" class="status-line"></div>
+  </section>
+
+  <!-- STEP 3: LEGAL ANALYSIS -->
+  <section class="panel hidden" id="panel-3">
+    <h1>What the law says</h1>
+    <p class="lede">NyayaLekh checked your facts against the ingredients of each offence under the Bharatiya Nyaya Sanhita, 2023. This is reasoning support, not legal advice.</p>
+
+    <div id="flags-box" class="flags-box hidden"></div>
+    <div id="matches-list"></div>
+
+    <div class="row-actions">
+      <button class="btn-ghost" id="btn-back-2">← Back</button>
+      <button class="btn-primary" id="btn-goto-pdf">Generate complaint document →</button>
+    </div>
+  </section>
+
+  <!-- STEP 4: FINAL DOCUMENT -->
+  <section class="panel hidden" id="panel-4">
+    <h1>Your complaint is ready</h1>
+    <p class="lede">Download the PDF, review it once more, and take it — or the FIR request — to the station. Remember: for a cognizable offence, they cannot refuse to register it, and under Zero FIR you can file at any station.</p>
+
+    <div class="lang-select">
+      <label><input type="radio" name="lang" value="English" checked> English</label>
+      <label><input type="radio" name="lang" value="Hindi"> हिंदी (label document as Hindi)</label>
+      <label><input type="radio" name="lang" value="Telugu"> తెలుగు (label document as Telugu)</label>
+    </div>
+    <p class="fine-note">Note: this demo drafts the formal complaint in English (the register used at the station). The language selector labels the document and is the hook point for full bilingual generation.</p>
+
+    <button id="btn-download" class="btn-primary">⬇ Download complaint PDF</button>
+    <div id="pdf-status" class="status-line"></div>
+
+    <button id="btn-restart" class="btn-ghost" style="margin-top:24px">Start a new complaint</button>
+  </section>
+
+</main>
+
+<footer class="foot">
+  Built for Idea2Impact 2026 · Not legal advice · Verify with your local police station or an advocate
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>
